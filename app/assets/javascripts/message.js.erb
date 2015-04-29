@@ -1,0 +1,201 @@
+//Contains function
+function contains(a, obj) {
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] === obj) {
+      return true;
+    }
+  }
+  return false;
+}
+
+$(document).ready(function(){
+  console.log("this js is working!");
+
+  // Sets badge
+  $('.badge').text( ($('.message').length - $('.read').length) );
+
+  //On clicking the select all checkbox
+  $('.fa-square-o').click(
+    function(){
+      $(this).toggleClass('fa-square-o').toggleClass('fa-check-square-o');
+
+      if (this.className === "fa fa-check-square-o"){
+        $(".message").addClass('selected');
+        $('.btn').slice(1,4).prop('disabled', false);
+        $('.apply-label').prop("disabled", false);
+        $('.remove-label').prop("disabled", false);
+        $(":checkbox").prop('checked', true);
+      }
+      else{
+        $(".message").removeClass('selected');
+        $('.btn').slice(1,4).prop("disabled", true);
+        $('.apply-label').prop("disabled", true);
+        $('.remove-label').prop("disabled", true);
+        $(":checkbox").prop('checked', false);
+      }
+  });
+
+  //On checking a single message
+  $( "input:checkbox" ).click(function(){
+    $(this).parents('.message').toggleClass('selected');
+    if ($(':checked').length > 2){
+      $('.btn').slice(1,4).prop('disabled', false);
+      $('.apply-label').prop("disabled", false);
+      $('.remove-label').prop("disabled", false);
+    }
+    else{
+      $('.btn').slice(1,4).prop("disabled", true);
+      $('.apply-label').prop("disabled", true);
+      $('.remove-label').prop("disabled", true);
+    }
+
+    if (($(':checked').length - 2) < $(":checkbox").length)
+    $('#all-check').addClass('fa-square-o').removeClass('fa-check-square-o');
+    else
+    $('#all-check').removeClass('fa-square-o').addClass('fa-check-square-o');
+  });
+
+//On clicking star
+  $('.star').click(function(){
+    // debugger;
+    var route = "http://localhost:3001" + $(this).parents('.message').attr("data-message-url") ;
+    if (this.className === "star fa fa-star-o"){
+     $(this).addClass('fa-star').removeClass('fa-star-o');
+     $.ajax({
+       url: route,
+       method: "PUT",
+       data: { "message": {"starred" : true} },
+       dataType: "html"
+     });
+    }
+    else{
+      $(this).addClass('fa-star-o').removeClass('fa-star');
+      $.ajax({
+        url: route,
+        method: "PUT",
+        data: { "message": {"starred" : false} },
+        dataType: "html"
+      });
+    }
+  });
+
+//Delete stuff
+  $('.fa-trash-o').parent().click(function(){
+    var allChecked = $('.message :checked').parents('.message');
+
+     for( var i = 0; i < allChecked.length; i++){
+       $.ajax({
+         url: "http://localhost:3001/messages/" + $(allChecked[i]).attr("data-message-url").split("/").pop(),
+          method: "Delete",
+          dataType: "html"
+        });
+      }
+    allChecked.remove();
+    $('.badge').text( ($('.message').length - $('.read').length) );
+  });
+
+//Mark as read
+  $('.btn:nth-of-type(2)').click(function(){
+    $('.message :checked').parents('.message').removeClass('unread').addClass('read');
+
+      var allChecked = $('.message :checked').parents('.message');
+      for( var i = 0; i < allChecked.length; i++){
+         $.ajax({
+           url: "http://localhost:3001/messages/" + $(allChecked[i]).attr("data-message-url").split("/").pop(),
+           method: "PATCH",
+           data: { "message": {"read" : true} },
+           dataType: "html"
+         });
+      }
+      // debugger
+
+    $(":checkbox").prop('checked', false);
+    $(".message").removeClass('selected');
+    $('.badge').text( ($('.message').length - $('.read').length) );
+
+    var route = "http://localhost:3001/messages/" + $('.message :checked').parents('.message').attr("data-message-url") ;
+
+
+  });
+
+//Mark as unread
+  $('.btn:nth-of-type(3)').click(function(){
+    $('.message :checked').parents('.message').removeClass('read').addClass('unread');
+    var allChecked = $('.message :checked').parents('.message');
+    for( var i = 0; i < allChecked.length; i++){
+      $.ajax({
+        url: "http://localhost:3001/messages/" + $(allChecked[i]).attr("data-message-url").split("/").pop(),
+        method: "PATCH",
+        data: { "message": {"read" : false} },
+        dataType: "html"
+      });
+    }
+    $(":checkbox").prop('checked', false);
+    $(".message").removeClass('selected');
+    $('.badge').text( ($('.message').length - $('.read').length) );
+  });
+
+//Apply label
+  $('.apply-label').change(function(){
+    if ($(this).val() !== "Apply label"){
+      var label = $(this).val();
+      var allChecked = $('.message :checked').parents('.message');
+      var labelsString = label
+      var labelArray = []
+      for( var i = 0; i < allChecked.length; i++){
+        var spans = $(allChecked[i]).children(".col-md-11").children("span")
+        for(var x = 0; x < spans.length;x++){
+           labelArray.push($(spans[x]).text())
+           labelsString = labelsString + " " + $(spans[x]).text()
+        }
+        // debugger
+        $.ajax({
+          url: "http://localhost:3001/messages/" + $(allChecked[i]).attr("data-message-url").split("/").pop(),
+          method: "PATCH",
+          data: { "message": {"labels" : labelsString} },
+          dataType: "html"
+        });
+        // debugger
+        if (!contains(labelArray, label)){
+          $(allChecked[i]).children(".col-md-11").prepend("<span class=\"label label-warning\">" + label + "</span>");
+        }
+        labelArray = []
+      }
+
+    $(this).children('option:first').attr("selected",true);
+    }
+  });
+
+//Remove label
+  $('.remove-label').change(function(){
+    var label = $(this).val();
+    var allChecked = $('.message :checked').parents('.message');
+    var labels = ""
+    for( var i = 0; i < allChecked.length; i++){
+      var spans = $(allChecked[i]).children(".col-md-11").children("span")
+      for(var x = 0; x < spans.length;x++){
+        if ($(spans[x]).text() !== label)
+          labels = labels + " " + $(spans[x]).text()
+      }
+      $.ajax({
+        url: "http://localhost:3001/messages/" + $(allChecked[i]).attr("data-message-url").split("/").pop(),
+        method: "PATCH",
+        data: { "message": {"labels" : labels} },
+        dataType: "html"
+      });
+    }
+    $('.message :checked').parents('.message').children(".col-md-11").children("span:contains('" + label + "')").remove();
+    $(this).children('option:first').attr("selected",true);
+  });
+
+//
+
+
+//on ready
+});
+
+
+//bugs: can add multiple labels of the same
+
+//Getting ID
+// $('.message :checked').parents('.message').attr("data-message-url").split("/").pop()
