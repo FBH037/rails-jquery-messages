@@ -36,7 +36,7 @@ $(document).ready(function(){
   });
 
   //On checking a single message
-  $( "input:checkbox" ).click(function(){
+  $("input:checkbox").click(function(){
     $(this).parents('.message').toggleClass('selected');
     if ($(':checked').length > 2){
       $('.btn').slice(1,4).prop('disabled', false);
@@ -188,7 +188,33 @@ $(document).ready(function(){
     $(this).children('option:first').attr("selected",true);
   });
 
-//
+
+//Store checked
+$(window).unload(function()
+  { var allChecked = $('.message :checked').parents('.message');
+    var checkedIds = []
+    for(var i = 0; i < allChecked.length; i++){
+      checkedIds.push($(allChecked[i]).attr("data-message-url").split("/").pop())
+    }
+    sessionStorage.setItem('checked', JSON.stringify({"ids": checkedIds}))
+  });
+
+//Recheck stored ids
+var recheckIds = JSON.parse(sessionStorage.getItem('checked')).ids
+var allCheckBoxes = $("input:checkbox")
+  if (recheckIds.length > 0){
+    $('.btn').slice(1,4).prop('disabled', false);
+    $('.apply-label').prop("disabled", false);
+    $('.remove-label').prop("disabled", false);
+  }
+
+  for(var i = 0; i < allCheckBoxes.length; i++){
+    if (contains(recheckIds, $(allCheckBoxes[i]).parents('.message').attr("data-message-url").split("/").pop())){
+      $(allCheckBoxes[i]).prop('checked', true)
+      $(allCheckBoxes[i]).parents('.message').addClass('selected');
+    }
+  }
+
 
 
 //on ready
